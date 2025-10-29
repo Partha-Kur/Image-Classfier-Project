@@ -1,0 +1,70 @@
+# We will be using google colab and tensorflow for this
+
+import tensorflow as tf
+from tensorflow import keras
+
+
+fashion_mnist = keras.datasets.fashion_mnist 
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+
+
+from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras import Model, Input
+
+# Define the input layer
+inputs = Input(shape=(28, 28))
+
+# Flatten the input
+x = Flatten()(inputs)
+
+# Add Dense layers
+x = Dense(128, activation='relu')(x)
+outputs = Dense(10, activation='relu')(x)
+
+# Create the model
+model = Model(inputs=inputs, outputs=outputs)
+model.summary
+
+
+model.compile(optimizer='adam',loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.fit(train_images, train_labels, epochs=50)
+
+
+test_loss, test_acc = model.evaluate(test_images, test_labels)
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the class names for Fashion MNIST
+classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+# Get the predictions for the test images
+predictions = model.predict(test_images)
+
+# Function to display an image and its prediction
+def plot_image_prediction(i, predictions_array, true_label, img):
+  predictions_array, true_label, img = predictions_array[i], true_label[i], img[i]
+  plt.grid(False)
+  plt.xticks([])
+  plt.yticks([])
+
+  plt.imshow(img.reshape(28, 28), cmap=plt.cm.binary)
+
+  predicted_label = np.argmax(predictions_array)
+  color = 'blue' if predicted_label == true_label else 'red'
+
+  plt.xlabel("{} ({})".format(classes[predicted_label],
+                                classes[true_label]),
+                                color=color)
+
+# Plot the first 10 test images with their predictions
+num_rows = 5
+num_cols = 2
+num_images = num_rows * num_cols
+plt.figure(figsize=(2 * 2 * num_cols, 2 * num_rows))
+for i in range(num_images):
+  plt.subplot(num_rows, 2 * num_cols, 2 * i + 1)
+  plot_image_prediction(i, predictions, test_labels, test_images)
+plt.tight_layout()
+plt.show()
