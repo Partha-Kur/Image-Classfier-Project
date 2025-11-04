@@ -1,70 +1,104 @@
-# We will be using google colab and tensorflow for this
+import tensorflow as tf
+from tensorflow import keras
+from keras import datasets, models
+import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from tensorflow import keras
+from keras import datasets, models
 
-
-fashion_mnist = keras.datasets.fashion_mnist 
+# Load and split the data
+fashion_mnist = keras.datasets.fashion_mnist
+# Split data into training and testing
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
+# Normalize and reshape the images
+train_images, test_images = train_images / 255.0, test_images / 255.0
+classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
-from tensorflow.keras.layers import Flatten, Dense
-from tensorflow.keras import Model, Input
+# Reshape images to include the channel dimension
+train_images = train_images.reshape((train_images.shape[0], 28, 28, 1))
+test_images = test_images.reshape((test_images.shape[0], 28, 28, 1))
 
-# Define the input layer
-inputs = Input(shape=(28, 28))
+train_images, test_images = train_images / 255.0, test_images / 255.0
+classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+           'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
-# Flatten the input
+# Reshape images to include the channel dimension
+train_images = train_images.reshape((train_images.shape[0], 28, 28, 1))
+test_images = test_images.reshape((test_images.shape[0], 28, 28, 1))
+
+# If you want to look at other images change this
+IMGindex = 28
+plt.imshow(train_images[IMGindex], cmap=plt.cm.binary)
+plt.xlabel(classes[train_labels[IMGindex]])
+plt.show()
+
+from tensorflow.keras.layers import Input, Dense, Flatten
+import tensorflow as tf
+# We will be using the functional API
+
+# Input layer
+inputs = Input(shape=(28, 28, 1))
+
 x = Flatten()(inputs)
-
-# Add Dense layers
 x = Dense(128, activation='relu')(x)
-outputs = Dense(10, activation='relu')(x)
+outputs = Dense(10, activation='softmax')(x)
 
-# Create the model
-model = Model(inputs=inputs, outputs=outputs)
-model.summary
+model = tf.keras.Model(inputs=inputs, outputs=outputs)
+model.summary()
 
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
 
-model.compile(optimizer='adam',loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-model.fit(train_images, train_labels, epochs=50)
+model.fit(train_images, train_labels, epochs=10)
 
-
-test_loss, test_acc = model.evaluate(test_images, test_labels)
-
+test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+print(test_acc)
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Define the class names for Fashion MNIST
-classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+COLOR = 'white'
+plt.rcParams['text.color'] = COLOR
+plt.rcParams['axes.labelcolor'] = COLOR
 
-# Get the predictions for the test images
+def show_image(img, label, guess):
+  plt.figure()
+  plt.imshow(img, cmap=plt.cm.binary)
+  plt.title("Expected: " + label)
+  plt.xlabel("Guess: " + guess)
+  plt.colorbar()
+  plt.grid(False)
+  plt.show()
+  print(f"Expected: {label}")
+  print(f"Prediction: {guess}")
+
+
+def get_number():
+  while True:
+    num = input("Pick a number: ")
+    if num.isdigit():
+      num = int(num)
+      if 0 <= num < len(test_images): # Allow any valid index within the test set
+        return int(num)
+      else:
+          print(f"Please enter a number between 0 and {len(test_images) - 1}.")
+    else:
+      print("Try again...")
+
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+# Make predictions on the test set
 predictions = model.predict(test_images)
 
-# Function to display an image and its prediction
-def plot_image_prediction(i, predictions_array, true_label, img):
-  predictions_array, true_label, img = predictions_array[i], true_label[i], img[i]
-  plt.grid(False)
-  plt.xticks([])
-  plt.yticks([])
+# Get user input for the image index
+num = get_number()
+image = test_images[num]
+label = test_labels[num]
 
-  plt.imshow(img.reshape(28, 28), cmap=plt.cm.binary)
-
-  predicted_label = np.argmax(predictions_array)
-  color = 'blue' if predicted_label == true_label else 'red'
-
-  plt.xlabel("{} ({})".format(classes[predicted_label],
-                                classes[true_label]),
-                                color=color)
-
-# Plot the first 10 test images with their predictions
-num_rows = 5
-num_cols = 2
-num_images = num_rows * num_cols
-plt.figure(figsize=(2 * 2 * num_cols, 2 * num_rows))
-for i in range(num_images):
-  plt.subplot(num_rows, 2 * num_cols, 2 * i + 1)
-  plot_image_prediction(i, predictions, test_labels, test_images)
-plt.tight_layout()
-plt.show()
+# Display the image and its prediction
+predicted_class = class_names[np.argmax(predictions[num])]
+show_image(image, class_names[label], predicted_class)
